@@ -9,10 +9,17 @@ enum WeatherType {
     Storm
 }
 
+namespace SpriteKind {
+    export const Cloud = SpriteKind.create()
+}
+
 namespace weatherSystem {
     let clouds: Sprite[] = []
     let weather = WeatherType.Clear
     let lightningActive = false
+
+    // Optional: use your own cloud image asset
+    export let cloudImage: Image = null
 
     //% block="set weather to $type"
     //% weight=100
@@ -33,35 +40,37 @@ namespace weatherSystem {
         }
     }
 
-    //% block="create clouds"
-    //% weight=90
-    export function createClouds() {
+    function createClouds() {
         clearClouds()
+
         for (let i = 0; i < 5; i++) {
-            let cloud = sprites.create(randomCloudShape(), SpriteKind.create())
+            const img = cloudImage ? cloudImage.clone() : randomCloudShape()
+            const cloud = sprites.create(img, SpriteKind.Cloud)
             cloud.setPosition(randint(0, 160), randint(10, 50))
-            cloud.vx = -10 + randint(0, 5)
-            cloud.z = i
-            cloud.setFlag(SpriteFlag.AutoDestroy, true)
+            cloud.vx = -10 + randint(2, 6)
+            cloud.z = 1
+            cloud.setFlag(SpriteFlag.AutoDestroy, false)
             clouds.push(cloud)
         }
     }
 
     function randomCloudShape(): Image {
-        let width = randint(30, 50)
-        let height = randint(15, 25)
-        let imgCloud = image.create(width, height)
+        const width = randint(30, 50)
+        const height = randint(15, 25)
+        const imgCloud = image.create(width, height)
 
         for (let i = 0; i < 20; i++) {
-            let cx = randint(0, width - 1)
-            let cy = randint(0, height - 1)
-            let radius = randint(2, 5)
+            const cx = randint(0, width - 1)
+            const cy = randint(0, height - 1)
+            const radius = randint(2, 5)
 
             for (let x = -radius; x <= radius; x++) {
                 for (let y = -radius; y <= radius; y++) {
-                    if (cx + x >= 0 && cx + x < width && cy + y >= 0 && cy + y < height) {
+                    const px = cx + x
+                    const py = cy + y
+                    if (px >= 0 && px < width && py >= 0 && py < height) {
                         if (x * x + y * y <= radius * radius) {
-                            imgCloud.setPixel(cx + x, cy + y, 15)
+                            imgCloud.setPixel(px, py, 15)
                         }
                     }
                 }
@@ -88,12 +97,11 @@ namespace weatherSystem {
         game.onUpdateInterval(100, function () {
             if (weather != WeatherType.Rain && weather != WeatherType.Storm) return
 
-            let drop = sprites.create(img`
-                . . 
-                1 1 
-                . . 
+            const drop = sprites.create(img`
+                . .
+                1 1
+                . .
             `, SpriteKind.create())
-
             drop.setPosition(randint(0, 160), 0)
             drop.vy = 60
             drop.setFlag(SpriteFlag.AutoDestroy, true)
@@ -114,11 +122,11 @@ namespace weatherSystem {
     //% weight=80
     export function updateCloudDisplay() {
         for (let cloud of clouds) {
-            if (cloud.x + cloud.width < 0) {
-                cloud.setImage(randomCloudShape())
-                cloud.x = 160 + randint(0, 20)
+            if (cloud.right < 0) {
+                cloud.setImage(cloudImage ? cloudImage.clone() : randomCloudShape())
+                cloud.left = 160 + randint(10, 30)
                 cloud.y = randint(10, 50)
-                cloud.vx = -10 + randint(0, 5)
+                cloud.vx = -10 + randint(2, 6)
             }
         }
     }
